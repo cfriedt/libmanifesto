@@ -1,0 +1,178 @@
+language: cpp
+
+dist: bionic
+
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      arch: amd64
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+            - doxygen
+            - graphviz
+            - lcov
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=gcc && CXX=g++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: ppc64le
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=gcc && CXX=g++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: s390x
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=gcc && CXX=g++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: arm64
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=gcc && CXX=g++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: amd64
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+            - clang
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=clang && CXX=clang++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: ppc64le
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+            - clang
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=clang && CXX=clang++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: s390x
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+            - clang
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=clang && CXX=clang++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: linux
+      arch: arm64
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - autoconf-archive
+            - cmake
+            - clang
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make && CC=clang && CXX=clang++ && CFLAGS='-Wall -Wextra -Werror' && CXXFLAGS='-Wall -Wextra -Werror'"
+    - os: osx
+      osx_image: xcode11.3
+      addons:
+        homebrew:
+          packages:
+            - autoconf-archive
+      env:
+        - MATRIX_EVAL="SUDO=sudo && MAKE=make"
+    - os: windows
+  allow_failures:
+  - os: windows
+    if: tag IS blank
+  - os: osx
+    if: tag IS blank
+  - arch: ppcle64
+    if: tag IS blank
+  - arch: s390x
+    if: tag IS blank
+  - arch: arm64
+    if: tag IS blank
+
+before_install:
+  - eval "${MATRIX_EVAL}"
+
+before_script:
+- |-
+    case $TRAVIS_OS_NAME in
+      linux|osx)
+        sudo sh .scripts/build-and-install-libgtest-libraries.sh
+        ;;
+      windows)
+        export PATH="${PATH}:/c/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/MSBuild/15.0/Bin"
+        ;;
+    esac
+
+script:
+- |-
+    case $TRAVIS_OS_NAME in
+      linux|osx)
+        eval "${MATRIX_EVAL}"
+        autoreconf -vfi
+        ./configure ${OPTS}
+        make -j`nproc --all`
+        make check
+        ;;
+      windows)
+        cmake .
+        msbuild.exe crcx.sln
+        ;;
+    esac
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GH_TOKEN
+  keep_history: true
+  on:
+    tags: true
+    condition:
+      - $TRAVIS_OS_NAME = linux
+      - $TRAVIS_CPU_ARCH = amd64
+  local_dir: docs/html
+
+notifications:
+  email: false
