@@ -141,6 +141,10 @@ static int manifest_pack_string_desc(manifest_t manifest, size_t index) {
       string_size,
       desc->id,
   };
+  if (desc->id == 0) {
+    // "The id field shall not be 0x00, as that is an invalid String ID value."
+    return -EINVAL;
+  }
   return manifest_pack_desc(manifest, desc_size, DESC_TYPE_STRING, data,
                             sizeof(data), desc->string_, string_size);
 }
